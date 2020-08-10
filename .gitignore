@@ -1,0 +1,12 @@
+# folders
+.vscode
+
+# files
+build/*.o
+build/*.d
+build/*.map
+./*.o
+./*.s
+*.elf
+*.gba
+*.sav
