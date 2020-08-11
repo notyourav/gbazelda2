@@ -15,4 +15,6 @@ typedef struct {
     s16 x, y;
 } Pos;
 
+#define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
+
 #endif
