@@ -43,7 +43,7 @@ CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
 
-ASFLAGS	:=	-g $(ARCH)
+ASFLAGS	:=	-g $(ARCH) $(INCLUDE)
 LDFLAGS	=	-g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 #---------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ LIBS	:= -lmm -lgba
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=	$(LIBGBA)
+LIBDIRS	:=	$(LIBGBA) #$(DEVKITPRO)/libgba
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -155,11 +155,16 @@ soundbank.bin soundbank.h : $(AUDIOFILES)
 %.pcx.o	%_pcx.h :	%.pcx
 	@echo $(notdir $<)
 	@$(bin2o)
+
+%.1bpp.o %_1bpp.h : %.1bpp
+	@echo $(notdir $<)
+	@$(bin2o)
+
 %.4bpp.o %_4bpp.h : %.4bpp
 	@echo $(notdir $<)
 	@$(bin2o)
+
 %.gbapal.o %_gbapal.h : %.gbapal
-#---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
 

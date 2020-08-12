@@ -11,6 +11,8 @@
 #include "math.h"
 #include <stdlib.h>
 
+#include "const.h"
+
 typedef struct {
     s16 x, y;
 } Pos;

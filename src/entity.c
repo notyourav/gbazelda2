@@ -2,12 +2,15 @@
 #include "oam.h"
 #include "entity.h"
 
+Entity EntStack[20];
+u32 EntCount = 0;
 
-Entity entStack[20];
-u32 entCount = 0;
+extern void Player(Entity*);
+extern void Shield(Entity*);
 
 void (*const EntMains[])(Entity*) = {
     Player,
+    Shield,
 };
 
 
@@ -15,10 +18,11 @@ void (*const EntMains[])(Entity*) = {
 // Creates a new empty entity.
 //---------------------------------------------------------------------------------
 Entity* CreateEntity(u32 type) {
-    if (entCount < ARRAY_COUNT(entStack)) {
-        entCount++;
+    if (EntCount < ARRAY_COUNT(EntStack)) {
 
-        Entity* newEntity = &entStack[entCount];
+        Entity* newEntity = &EntStack[EntCount];
+        newEntity->type = type;
+        EntCount++;
         return newEntity;
     }
     return NULL;
@@ -26,8 +30,8 @@ Entity* CreateEntity(u32 type) {
 
 void ClearAllEntities() {
     int i;
-    for (i = ARRAY_COUNT(entStack); i > 0; i--) {
-        dmaCopy(0x0, &entStack[i], sizeof(entStack[i]));
+    for (i = ARRAY_COUNT(EntStack); i > 0; i--) {
+        dmaCopy(0x0, &EntStack[i], sizeof(EntStack[i]));
     }
 }
 
@@ -36,8 +40,8 @@ void ClearAllEntities() {
 //---------------------------------------------------------------------------------
 void UpdateEntitiesOAM() {
     int i;
-    for (i = 0; i < ARRAY_COUNT(entStack); i++) {
-        UpdateObjectAttributes(&entStack[i]);
+    for (i = 0; i < ARRAY_COUNT(EntStack); i++) {
+        UpdateObjectAttributes(&EntStack[i]);
     }
 }
 
@@ -47,9 +51,9 @@ void UpdateEntitiesOAM() {
 void UpdateEntities() {
     int i;
 
-    if (entCount == 0) return;
+    if (EntCount == 0) return;
 
-    for (i = 0; i < entCount; i++) {
-        EntMains[entStack[i].type](&entStack[i]);
+    for (i = 0; i < EntCount; i++) {
+        EntMains[EntStack[i].type](&EntStack[i]);
     }
 }

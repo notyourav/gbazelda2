@@ -6,7 +6,7 @@
 #include "sprite.h"
 #include "entity.h"
 
-#include "link_run_gbapal.h"
+#include "link_gbapal.h"
 #include "link_run_4bpp.h"
 
 void Player();

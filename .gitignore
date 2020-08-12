@@ -10,3 +10,4 @@ build/*.map
 *.elf
 *.gba
 *.sav
+.DS_Store

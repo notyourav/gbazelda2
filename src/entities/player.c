@@ -9,7 +9,10 @@ enum {
 static void Init();
 static void Update();
 
-void (*const PlayerActions[])(Entity*) = {
+static void DoPhysics();
+static void UpdateAnimation();
+
+static void (*const PlayerActions[])(Entity*) = {
     Init,
     Update,
 };
@@ -19,7 +22,7 @@ void Player(Entity* this) {
 }
 
 static void Init(Entity* this) {
-    Load24x32(link_run_4bpp, link_run_gbapal, this);
+    LoadSprite(link_run_4bpp, link_gbapal, this, SIZE_24x32);
     this->action = UPDATE;
 }
 
@@ -40,19 +43,19 @@ static void Update(Entity* this) {
             this->pos.y -= 1;
         }
         
-        CleanUpMovement(this);
+        DoPhysics(this);
         UpdateAnimation();
 }
 
 u32 animFrame;
-void UpdateAnimation() {
+static void UpdateAnimation() {
     if (frame % 3 == 0) {
         animFrame = (animFrame + 1) % 12;
         dmaCopy(link_run_4bpp + (32 * 12 * animFrame), &MEM_TILE[4][0], 32 * 12);
     }
 }
 
-void CleanUpMovement(Entity* this) {
+static void DoPhysics(Entity* this) {
         this->pos.y += this->vel.y >> 4;
 
         if (this->vel.y > -50) {

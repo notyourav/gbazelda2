@@ -3,6 +3,9 @@
 //---------------------------------------------------------------------------------
 #include "global.h"
 #include "main.h"
+#include "gba_console.h"
+#include "amiga_1bpp.h"
+#include "debug.h"
 
 u16 keysDownRaw;
 Input inputDown;
@@ -43,14 +46,19 @@ int main(void)
 	// Allow Interrupts
 	REG_IME = 1;
 
-	SetMode( MODE_1 | OBJ_ENABLE | OBJ_1D_MAP );
+	SetMode( MODE_1 | BG0_ENABLE | OBJ_ENABLE | OBJ_1D_MAP );
 	camera.x = 0;
 	camera.y = 0;
+	//consoleInit(0, 31, 0, amiga_1bpp, 10, 0);
+	
 	CreateEntity(0);
+	CreateEntity(1);
 	while (1)
 	{
 		VBlankIntrWait();
 
+		DebugScanKeys();
+	
 		UpdateEntities();
 		UpdateEntitiesOAM();
 
