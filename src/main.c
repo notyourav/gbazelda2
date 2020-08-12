@@ -3,8 +3,6 @@
 //---------------------------------------------------------------------------------
 #include "global.h"
 #include "main.h"
-#include "player.h"
-#include "oam.h"
 
 u16 keysDownRaw;
 Input inputDown;
@@ -46,16 +44,17 @@ int main(void)
 	REG_IME = 1;
 
 	SetMode( MODE_1 | OBJ_ENABLE | OBJ_1D_MAP );
-	SetupPlayer();
 	camera.x = 0;
 	camera.y = 0;
+	CreateEntity(0);
 	while (1)
 	{
 		VBlankIntrWait();
-		// if (keysDown() & 1) doVSync = !doVSync;
-		// if (doVSync) vsync();
 
-		PlayerLoop();
+		UpdateEntities();
+		UpdateEntitiesOAM();
+
+		CopyPaletteBuffer();
 		CopyOAMBuffer();
 	}
 }

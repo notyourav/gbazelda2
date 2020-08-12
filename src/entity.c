@@ -1,11 +1,20 @@
 #include "global.h"
-#include "entity.h"
 #include "oam.h"
+#include "entity.h"
+
 
 Entity entStack[20];
 u32 entCount = 0;
 
-Entity* CreateEntity() {
+void (*const EntMains[])(Entity*) = {
+    Player,
+};
+
+
+//---------------------------------------------------------------------------------
+// Creates a new empty entity.
+//---------------------------------------------------------------------------------
+Entity* CreateEntity(u32 type) {
     if (entCount < ARRAY_COUNT(entStack)) {
         entCount++;
 
@@ -22,9 +31,25 @@ void ClearAllEntities() {
     }
 }
 
+//---------------------------------------------------------------------------------
+// Pushes the entity's object attributes to the buffer.
+//---------------------------------------------------------------------------------
 void UpdateEntitiesOAM() {
     int i;
     for (i = 0; i < ARRAY_COUNT(entStack); i++) {
-        UpdateObjectAttributes(entStack[i].oamIndex, &entStack[i], entStack[i].shape );
+        UpdateObjectAttributes(&entStack[i]);
+    }
+}
+
+//---------------------------------------------------------------------------------
+// Update all entites.
+//---------------------------------------------------------------------------------
+void UpdateEntities() {
+    int i;
+
+    if (entCount == 0) return;
+
+    for (i = 0; i < entCount; i++) {
+        EntMains[entStack[i].type](&entStack[i]);
     }
 }

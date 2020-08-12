@@ -9,7 +9,6 @@
 #include "link_run_gbapal.h"
 #include "link_run_4bpp.h"
 
-void SetupPlayer();
-void PlayerLoop();
+void Player();
 
 #endif

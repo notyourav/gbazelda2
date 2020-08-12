@@ -2,6 +2,9 @@
 #define MAIN_H
 
 #include "global.h"
+#include "player.h"
+#include "oam.h"
+#include "entity.h"
 
 typedef struct {
     u16 a      : 1;
