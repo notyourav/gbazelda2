@@ -1,5 +1,5 @@
 #include "global.h"
-#include "oam.h"
+#include "sprite.h"
 #include "entity.h"
 
 Entity EntStack[20];
@@ -7,10 +7,12 @@ u32 EntCount = 0;
 
 extern void Player(Entity*);
 extern void Shield(Entity*);
+extern void Sword(Entity*);
 
 void (*const EntMains[])(Entity*) = {
     Player,
     Shield,
+    Sword,
 };
 
 
@@ -28,9 +30,31 @@ Entity* CreateEntity(u32 type) {
     return NULL;
 }
 
+//---------------------------------------------------------------------------------
+// Returns the first occurence of entity type.
+//---------------------------------------------------------------------------------
+Entity* FindEntity(u32 type) {
+    int i;
+    Entity* c;
+    for (i = 0; i < EntCount; i++) {
+        c = &EntStack[i];
+        if (c->type == type) {
+            return c;
+        }
+    }
+    return NULL;
+}
+
+//---------------------------------------------------------------------------------
+// Remove all entities.
+//---------------------------------------------------------------------------------
 void ClearAllEntities() {
     int i;
+
+    // Could be simplified to one dmaCopy, but this is a placeholder in case
+    // we want to treat the clearing of entities differently.
     for (i = ARRAY_COUNT(EntStack); i > 0; i--) {
+        // TODO: does this result in a forbidden memory access?
         dmaCopy(0x0, &EntStack[i], sizeof(EntStack[i]));
     }
 }
@@ -40,8 +64,10 @@ void ClearAllEntities() {
 //---------------------------------------------------------------------------------
 void UpdateEntitiesOAM() {
     int i;
-    for (i = 0; i < ARRAY_COUNT(EntStack); i++) {
-        UpdateObjectAttributes(&EntStack[i]);
+    Entity* c;
+    for (i = 0; i < EntCount; i++) {
+        c = &EntStack[i];
+        UpdateObjectAttributes(c);
     }
 }
 

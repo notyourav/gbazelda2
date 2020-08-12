@@ -2,7 +2,6 @@
 #define PLAYER_H
 
 #include "main.h"
-#include "oam.h"
 #include "sprite.h"
 #include "entity.h"
 

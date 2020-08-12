@@ -1,5 +1,5 @@
 #include "global.h"
-#include "oam.h"
+#include "sprite.h"
 
 OBJATTR OAMBuffer[128];
 static u32 objectCount = 0;
@@ -56,17 +56,17 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
     objectCount += objNum;
 }
 
-void Update16x16(OBJATTR* base, Entity* ent) {
+void Update16x16(OBJATTR* base, Entity* ent, s8 animOffX, s8 animOffY) {
     int pOffX = 0;
     int pOffY = 0;
 
     if (ent->parent != NULL) {
         pOffX = ent->parent->pos.x;
-        pOffY = ent->parent->pos.x;
+        pOffY = ent->parent->pos.y;
     }
-    base[0].attr0 = (ent->oamAttr0 << 8) + (u8)(ent->pos.y - pOffY + camera.y + (SCREEN_H / 2));
-    base[0].attr1 = (ent->oamAttr1 << 8) + (u8)(ent->pos.x + pOffX - camera.x + (SCREEN_W / 2));
-    base[0].attr2 = ent->vramIndex;
+    base[0].attr0 = (ent->oamAttr0 << 8) + (u8)(-ent->pos.y - pOffY - animOffY + camera.y + (SCREEN_H / 2));
+    base[0].attr1 = (ent->oamAttr1 << 8) + (u8)( ent->pos.x + pOffX + animOffX - camera.x + (SCREEN_W / 2));
+    base[0].attr2 = ent->vramIndex | ((ent->priority & 3) << 10);
 }
 
 //---------------------------------------------------------------------------------
@@ -81,13 +81,14 @@ void Update24x32(OBJATTR* base, Entity* ent) {
 
     if (ent->parent != NULL) {
         pOffX = ent->parent->pos.x;
-        pOffY = ent->parent->pos.x;
+        pOffY = ent->parent->pos.y;
     }
+
     for (i = 0; i < 4; i++) {  
         for (j = 0; j < 3; j++) {
             base[c].attr0 = (ent->oamAttr0 << 8) + (u8)(i * 8 - ent->pos.y - pOffY + camera.y + (SCREEN_H / 2));
             base[c].attr1 = (ent->oamAttr1 << 8) + (u8)(j * 8 + ent->pos.x + pOffX - camera.x + (SCREEN_W / 2));
-            base[c].attr2 = (ent->vramIndex + c);
+            base[c].attr2 = (ent->vramIndex + c) | ((ent->priority & 3) << 10);
             c++;
         }
     }
@@ -99,12 +100,38 @@ void Update24x32(OBJATTR* base, Entity* ent) {
 //---------------------------------------------------------------------------------
 void UpdateObjectAttributes(Entity* ent) {
     OBJATTR* base = &OAMBuffer[ent->oamIndex];
+    u8 animOffX = 0;
+    u8 animOffY = 0;
 
+    if (ent->animation != NULL) {
+        const Keyframe* frame;
+
+        if (ent->frameIndex != 0xFF) {
+            frame = &ent->animation->frames[ent->frameIndex];
+
+            if (frame->end) {
+                if (frame->loop) {
+                    ent->frameIndex = 0x00;
+                }
+                else {
+                    ent->frameIndex = 0xFF;
+                }
+            }
+            else {
+                animOffX = frame->xOff;
+                animOffY = frame->yOff;
+                // TODO: implement flipping
+
+
+                ent->frameIndex++;
+            }
+        }
+    }
     switch (ent->shape) {
         case NONE:
             break;
         case SIZE_16x16:
-            Update16x16(base, ent);
+            Update16x16(base, ent, animOffX, animOffY);
             break;
         case SIZE_24x32:
             Update24x32(base, ent);
