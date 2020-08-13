@@ -21,8 +21,8 @@ enum {
 static const Keyframe Idle[] = {
     {
         .duration = 1,
-        .xOff = -9,
-        .yOff = -11,
+        .xOff = -6,
+        .yOff = 8,
         .loop = 1,
         .end = 1,
     },

@@ -6,6 +6,7 @@
 #include "gba_console.h"
 #include "amiga_1bpp.h"
 #include "debug.h"
+#include <stdio.h>
 
 u16 keysDownRaw;
 Input inputDown;

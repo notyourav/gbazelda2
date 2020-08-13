@@ -15,7 +15,7 @@ extern u16 bgPalBuffer[16];
 extern u16 objPalBuffer[16];
 
 extern OBJATTR OAMBuffer[128];
-
+extern u32 tileCount;
 void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape);
 void UpdateObjectAttributes(Entity* ent);
 void CopyPaletteBuffer();

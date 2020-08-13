@@ -7,7 +7,7 @@ OBJATTR OAMBuffer[128];
 static u32 objectCount = 0;
 
 // each tile is a word, 8x8 pixels
-static u32 tileCount = 0;
+u32 tileCount = 0;
 
 u32 PaletteBuffer[16];
 static u32 paletteCount = 0;
@@ -34,13 +34,13 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
         ent->vramIndex = tileCount;
         switch (shape) {
             case SIZE_16x16:
-                dmaCopy(gfx, &MEM_TILE[4][tileCount >> 1], 32 * 4);
+                dmaCopy(gfx, SPR_VRAM(tileCount), 32 * 4);
                 ent->center.x = 8;
                 ent->center.y = 8;
                 tileCount += 4;
                 break;
             case SIZE_24x32:
-                dmaCopy(gfx, &MEM_TILE[4][tileCount >> 1], 32 * 12);
+                dmaCopy(gfx, SPR_VRAM(tileCount), 32 * 12);
                 ent->center.x = 11;
                 ent->center.y = 16;
                 tileCount += 12;
@@ -72,7 +72,9 @@ void Update16x16(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
             offX -= curFrame->xOff;
         }
         offY += curFrame->yOff;
-        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 4)), MEM_TILE[4][ent->vramIndex], 32 * 4);
+    	//sprintf(nocash_buffer, "VRAM INDEX: %u", ent->vramIndex);
+		//nocash_message();
+        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 4)), SPR_VRAM(ent->vramIndex), 32 * 4);
     }
 
     if (ent->parent != NULL) {
@@ -98,7 +100,7 @@ void Update24x32(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
     if (curFrame != NULL) {
         offX += curFrame->xOff;
         offY += curFrame->yOff;
-        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 12)), MEM_TILE[4][ent->vramIndex], 32 * 12);
+        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 12)), SPR_VRAM(ent->vramIndex), 32 * 12);
     }
 
     if (ent->parent != NULL) {
