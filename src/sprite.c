@@ -1,5 +1,7 @@
 #include "global.h"
 #include "sprite.h"
+#include "tonc_nocash.h"
+#include <stdio.h>
 
 OBJATTR OAMBuffer[128];
 static u32 objectCount = 0;
@@ -33,10 +35,14 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
         switch (shape) {
             case SIZE_16x16:
                 dmaCopy(gfx, &MEM_TILE[4][tileCount >> 1], 32 * 4);
+                ent->center.x = 8;
+                ent->center.y = 8;
                 tileCount += 4;
                 break;
             case SIZE_24x32:
                 dmaCopy(gfx, &MEM_TILE[4][tileCount >> 1], 32 * 12);
+                ent->center.x = 11;
+                ent->center.y = 16;
                 tileCount += 12;
                 break;
         }
@@ -48,66 +54,99 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
         paletteCount++;
     }
 
-    if (ent != NULL) {
-        ent->oamIndex = objectCount;
-        ent->shape = shape;
-    }
+    ent->oamIndex = objectCount;
+    ent->shape = shape;
 
     objectCount += objNum;
 }
 
-void Update16x16(OBJATTR* base, Entity* ent, s8 animOffX, s8 animOffY) {
-    int pOffX = 0;
-    int pOffY = 0;
+void Update16x16(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
+    int offX = 0;
+    int offY = 0;
+
+    if (curFrame != NULL) {
+        if (ent->attr1.f.flipX) {
+            offX += curFrame->xOff;
+        }
+        else {
+            offX -= curFrame->xOff;
+        }
+        offY += curFrame->yOff;
+        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 4)), MEM_TILE[4][ent->vramIndex], 32 * 4);
+    }
 
     if (ent->parent != NULL) {
-        pOffX = ent->parent->pos.x;
-        pOffY = ent->parent->pos.y;
+        offX += ent->parent->pos.x;
+        offY += ent->parent->pos.y;
     }
-    base[0].attr0 = (ent->oamAttr0 << 8) + (u8)(-ent->pos.y - pOffY - animOffY + camera.y + (SCREEN_H / 2));
-    base[0].attr1 = (ent->oamAttr1 << 8) + (u8)( ent->pos.x + pOffX + animOffX - camera.x + (SCREEN_W / 2));
+
+    base[0].attr0 = (ent->attr0.raw << 8) + (u8)(-ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
+    base[0].attr1 = (ent->attr1.raw << 8) + (u8)( ent->pos.x + offX - ent->center.x - camera.x + (SCREEN_W / 2));
     base[0].attr2 = ent->vramIndex | ((ent->priority & 3) << 10);
 }
 
 //---------------------------------------------------------------------------------
 // Updates every tile for a 24x32 sized entity.
 //---------------------------------------------------------------------------------
-void Update24x32(OBJATTR* base, Entity* ent) {
+void Update24x32(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
     int i = 0;
     int j = 0;
     int c = 0;
-    int pOffX = 0;
-    int pOffY = 0;
+    int offX = 0;
+    int offY = 0;
+
+    if (curFrame != NULL) {
+        offX += curFrame->xOff;
+        offY += curFrame->yOff;
+        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 12)), MEM_TILE[4][ent->vramIndex], 32 * 12);
+    }
 
     if (ent->parent != NULL) {
-        pOffX = ent->parent->pos.x;
-        pOffY = ent->parent->pos.y;
+        offX += ent->parent->pos.x;
+        offY += ent->parent->pos.y;
     }
 
     for (i = 0; i < 4; i++) {  
-        for (j = 0; j < 3; j++) {
-            base[c].attr0 = (ent->oamAttr0 << 8) + (u8)(i * 8 - ent->pos.y - pOffY + camera.y + (SCREEN_H / 2));
-            base[c].attr1 = (ent->oamAttr1 << 8) + (u8)(j * 8 + ent->pos.x + pOffX - camera.x + (SCREEN_W / 2));
-            base[c].attr2 = (ent->vramIndex + c) | ((ent->priority & 3) << 10);
-            c++;
+        if (((base[c].attr1 >> 8) & 0x10) != ent->attr1.f.flipX) {
+            for (j = 3; j > 0; j--) {
+                base[c].attr0 = (ent->attr0.raw << 8) + (u8)(i * 8 - ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
+                base[c].attr1 = (ent->attr1.raw << 8) + (u8)(j * 8 + ent->pos.x + offX - ent->center.x * 2 - camera.x + (SCREEN_W / 2));
+                base[c].attr2 = (ent->vramIndex + c) | ((ent->priority & 3) << 10);
+                c++;
+            }
+        }
+        else {
+            for (j = 0; j < 3; j++) {
+                base[c].attr0 = (ent->attr0.raw << 8) + (u8)(i * 8 - ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
+                base[c].attr1 = (ent->attr1.raw << 8) + (u8)(j * 8 + ent->pos.x + offX - ent->center.x - camera.x + (SCREEN_W / 2));
+                base[c].attr2 = (ent->vramIndex + c) | ((ent->priority & 3) << 10);
+                c++;
+            }
         }
     }
 }
 
-//---------------------------------------------------------------------------------
-// Updates any entity provided, as long as it has its object shape and OAM index
-// assigned.
-//---------------------------------------------------------------------------------
-void UpdateObjectAttributes(Entity* ent) {
-    OBJATTR* base = &OAMBuffer[ent->oamIndex];
-    u8 animOffX = 0;
-    u8 animOffY = 0;
-
-    if (ent->animation != NULL) {
+const Keyframe* ParseAnimation(Entity* ent) {
+    if (ent->animation != NULL && ent->animation->frames != NULL) {
         const Keyframe* frame;
 
         if (ent->frameIndex != 0xFF) {
             frame = &ent->animation->frames[ent->frameIndex];
+            if (frame->flipX) {
+                ent->attr1.f.flipX = !ent->attr1.f.flipX;
+            }
+
+            if (frame->flipY) {
+                ent->attr1.f.flipY = !ent->attr1.f.flipY;
+            }
+
+            if (ent->frameDuration < frame->duration) {
+                ent->frameDuration++;
+                return frame;
+            }
+            else {
+                ent->frameDuration = 0;
+            }
 
             if (frame->end) {
                 if (frame->loop) {
@@ -118,23 +157,32 @@ void UpdateObjectAttributes(Entity* ent) {
                 }
             }
             else {
-                animOffX = frame->xOff;
-                animOffY = frame->yOff;
-                // TODO: implement flipping
-
-
                 ent->frameIndex++;
             }
+            return frame;
         }
     }
+    return NULL;
+}
+
+//---------------------------------------------------------------------------------
+// Updates any entity provided, as long as it has its object shape and OAM index
+// assigned.
+//---------------------------------------------------------------------------------
+void UpdateObjectAttributes(Entity* ent) {
+    OBJATTR* base = &OAMBuffer[ent->oamIndex];
+    const Keyframe* curFrame;
+
+    curFrame = ParseAnimation(ent);
+
     switch (ent->shape) {
         case NONE:
             break;
         case SIZE_16x16:
-            Update16x16(base, ent, animOffX, animOffY);
+            Update16x16(base, ent, curFrame);
             break;
         case SIZE_24x32:
-            Update24x32(base, ent);
+            Update24x32(base, ent, curFrame);
             break;
     }
 }

@@ -12,7 +12,8 @@ enum {
 
 typedef struct {
     u32 duration : 8;
-    u32 flipX : 1;
+    u32 gfxOffset : 4;
+    u32 flipX : 1; // NOTE: these flip the sprite from its current state.
     u32 flipY : 1;
     u32 xOff : 8;
     u32 yOff : 8;
@@ -30,14 +31,35 @@ typedef struct Entity {
     u8 action;
     u16 oamIndex;
     u8 paletteIndex;
-    Animation* animation;
+    const Animation* animation;
     u8 frameIndex;
+    u8 frameDuration;
     u8 vramIndex;
-    u8 oamAttr0;
-    u8 oamAttr1;
+    union {
+        u8 raw;
+        struct {
+            u8 rotScaleFlag : 1;
+            u8 ctxFlag : 1;
+            u8 mode : 2;
+            u8 mosaic : 1;
+            u8 colorMode : 1;
+            u8 shape : 2;
+        } f;
+    } attr0;
+    union {
+        struct {
+            u8 reserved : 1;
+            u8 scaleFlags : 3;
+            u8 flipX : 1;
+            u8 flipY : 1;
+            u8 objSize : 2;
+        } f;
+        u8 raw;
+    } attr1;
     u8 shape;
     u8 priority;
     Pos pos;
+    Pos center;
     Pos vel;
     struct Entity* parent;
     struct Entity* child1;

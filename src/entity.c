@@ -8,11 +8,13 @@ u32 EntCount = 0;
 extern void Player(Entity*);
 extern void Shield(Entity*);
 extern void Sword(Entity*);
+extern void Ori(Entity*);
 
 void (*const EntMains[])(Entity*) = {
     Player,
     Shield,
     Sword,
+    Ori,
 };
 
 

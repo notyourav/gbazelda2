@@ -54,6 +54,7 @@ int main(void)
 	CreateEntity(0);
 	CreateEntity(1);
 	CreateEntity(2);
+	//CreateEntity(3);
 	while (1)
 	{
 		VBlankIntrWait();

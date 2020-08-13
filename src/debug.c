@@ -19,7 +19,7 @@ void DebugPrintEntityStack() {
 
     for (i = 0; i < EntCount; i++) {
         c = &EntStack[i];
-        sprintf(nocash_buffer, "Entity %u", i);
+        sprintf(nocash_buffer, "\nEntity %u", i);
         nocash_message();
         sprintf(nocash_buffer, "---------");
         nocash_message();
@@ -29,15 +29,13 @@ void DebugPrintEntityStack() {
         nocash_message();
         sprintf(nocash_buffer, "oamIndex: %u", c->oamIndex);
         nocash_message();
-        sprintf(nocash_buffer, "oamIndex: %u", c->oamIndex);
+        sprintf(nocash_buffer, "attr0: 0b"BINPATTERN, BIN(c->attr0.raw));
         nocash_message();
-        sprintf(nocash_buffer, "oamAttr0: 0b"BINPATTERN, BIN(c->oamAttr0));
-        nocash_message();
-        sprintf(nocash_buffer, "oamAttr1: 0b"BINPATTERN, BIN(c->oamAttr1));
+        sprintf(nocash_buffer, "attr1: 0b"BINPATTERN, BIN(c->attr1.raw));
         nocash_message();
         sprintf(nocash_buffer, "shape: %u", c->shape);
         nocash_message();
-        sprintf(nocash_buffer, "pos: %u, %u", c->pos.x, c->pos.y);
+        sprintf(nocash_buffer, "pos: %i, %i", c->pos.x, c->pos.y);
         nocash_message();
     }
 }
@@ -94,4 +92,8 @@ void DebugScanKeys() {
     } else if (inputHeld.lTrig) {
         //DebugPrintVRAM();
     }
+    else {
+        return;
+    }
+    nocash_puts("_____END FRAME DBG_____");
 }
