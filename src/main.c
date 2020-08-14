@@ -6,6 +6,7 @@
 #include "gba_console.h"
 #include "amiga_1bpp.h"
 #include "debug.h"
+#include "tree_parallax.h"
 #include <stdio.h>
 
 u16 keysDownRaw;
@@ -26,12 +27,7 @@ void VblankInterrupt()
 	inputDown = *(Input *)&keysDownRaw;
 	keysHeldRaw = keysHeld();
 	inputHeld = *(Input *)&keysHeldRaw;
-}
 
-inline void vsync()
-{
-    while (REG_VCOUNT >= 160);
-    while (REG_VCOUNT < 160);
 }
 
 //---------------------------------------------------------------------------------
@@ -47,7 +43,7 @@ int main(void)
 	// Allow Interrupts
 	REG_IME = 1;
 
-	SetMode( MODE_1 | BG0_ENABLE | OBJ_ENABLE | OBJ_1D_MAP );
+	SetMode( MODE_0 | BG2_ON | BG2_ENABLE | OBJ_ENABLE | OBJ_1D_MAP );
 	camera.x = 0;
 	camera.y = 0;
 	//consoleInit(0, 31, 0, amiga_1bpp, 10, 0);
@@ -55,6 +51,7 @@ int main(void)
 	CreateEntity(0);
 	CreateEntity(1);
 	CreateEntity(2);
+	Tree_Parallax();
 	//CreateEntity(3);
 	while (1)
 	{

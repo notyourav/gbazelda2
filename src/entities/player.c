@@ -7,18 +7,21 @@
 
 #include "link_idle_4bpp.h"
 #include "link_run_4bpp.h"
+#include "link_chop_4bpp.h"
 #include "link_gbapal.h"
 
 enum {
     INIT,
     DO_IDLE,
     DO_RUN,
+    DO_CHOP,
 };
 
 enum {
     NO_ANIM,
     IDLE,
     RUN,
+    CHOP,
 };
 
 static const Keyframe Idle[] = {
@@ -82,9 +85,54 @@ static const Keyframe Run[] = {
     },
 };
 
+static const Keyframe Chop[] = {
+    {
+        .duration = 2,
+        .gfxOffset = 0,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 1,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 2,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 3,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 4,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 5,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 6,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 7,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 8,
+    },
+    {
+        .duration = 2,
+        .gfxOffset = 9,
+        .loop = 0,
+        .end = 1,
+    },
+};
+
 static const Animation Animations[] = {
     {
-        .gfx = link_run_4bpp,
+        .gfx = link_idle_4bpp,
         .frames = NULL,
     },
     {
@@ -95,11 +143,16 @@ static const Animation Animations[] = {
         .gfx = link_run_4bpp,
         .frames = Run,
     },
+    {
+        .gfx = link_chop_4bpp,
+        .frames = Chop,
+    },
 };
 
 static void Init(Entity*);
 static void DoIdle(Entity*);
 static void DoRun(Entity*);
+static void DoChop(Entity*);
 
 static void ParseKeyInput(Entity*);
 static void DoPhysics(Entity*);
@@ -108,18 +161,18 @@ static void (*const PlayerActions[])(Entity*) = {
     Init,
     DoIdle,
     DoRun,
+    DoChop,
 };
 
 void Player(Entity* this) {
     PlayerActions[this->action](this);
-    ParseKeyInput(this);
     DoPhysics(this);
 }
 
 static void Init(Entity* this) {
     LoadSprite(link_run_4bpp, link_gbapal, this, SIZE_24x32);
     this->priority = 2;
-    this->animation = &Animations[IDLE];
+    SetAnimation(this, &Animations[IDLE]);
     this->action = DO_IDLE;
 }
 
@@ -128,38 +181,49 @@ static void ParseKeyInput(Entity* this) {
         this->vel.y += 120;
     }
     //if (1) {
-    if (inputHeld.left) {
+    if (inputDown.b) {
+        SetAnimation(this, &Animations[CHOP]);
+        this->action = DO_CHOP;
+    }
+    else if (inputHeld.left) {
         this->pos.x -= (frame & 1) * 3;
-        this->animation = &Animations[RUN];
+        SetAnimation(this, &Animations[RUN]);
         this->attr1.f.flipX = false;
         this->action = DO_RUN;
     }
     else if (inputHeld.right) {
         this->pos.x += (frame & 1) * 3;
-        this->animation = &Animations[RUN]; // switch to RUN when done debugging!
+        SetAnimation(this, &Animations[RUN]);
         this->attr1.f.flipX = true;
         this->action = DO_RUN;
     }
     else {
-        this->animation = &Animations[IDLE];
+        SetAnimation(this, &Animations[IDLE]);
         this->action = DO_IDLE;
         this->frameIndex = 0;
     }
 }
 
-static void DoRun(Entity* this) {
+static void DoIdle(Entity* this) {
+    ParseKeyInput(this);
 }
 
-static void DoIdle(Entity* this) {
+static void DoRun(Entity* this) {
+    ParseKeyInput(this);
+}
 
+static void DoChop(Entity* this) {
+    if (this->frameIndex == 0xFF) {
+        //this->action = DO_RUN;
+        this->frameIndex = 0x00;
+        ParseKeyInput(this);
+    }
 }
 
 static void DoPhysics(Entity* this) {
         this->pos.y += this->vel.y >> 4;
 
         this->pos.x += this->vel.x >> 4;
-
-        //this->vel.x /= 2;
 
         if (this->vel.y > -50) {
             this->vel.y -= 5;

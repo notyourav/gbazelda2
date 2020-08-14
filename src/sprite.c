@@ -65,13 +65,27 @@ void Update16x16(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
     int offY = 0;
 
     if (curFrame != NULL) {
+    }
+
+    if (curFrame != NULL && ent->parent != NULL) {
+        // make note
+        ent->attr1.f.flipX = curFrame->flipX ^ ent->parent->attr1.f.flipX;
+        //bool flipX = curFrame->flipX ^ ent->parent->attr1.f.flipX;
+        //bool flipY = curFrame->flipY ^ ent->parent->attr1.f.flipY;
+
         if (ent->attr1.f.flipX) {
-            offX += curFrame->xOff;
-        }
-        else {
             offX -= curFrame->xOff;
         }
-        offY += curFrame->yOff;
+        else {
+            offX += curFrame->xOff;
+        }
+
+        if (ent->attr1.f.flipY) {
+            offY -= curFrame->yOff;
+        }
+        else {
+            offY += curFrame->yOff;
+        }
     	//sprintf(nocash_buffer, "VRAM INDEX: %u", ent->vramIndex);
 		//nocash_message();
         dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 4)), SPR_VRAM(ent->vramIndex), 32 * 4);
@@ -97,6 +111,8 @@ void Update24x32(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
     int offX = 0;
     int offY = 0;
 
+    sprintf(nocash_buffer, "FRAME INDEX: %u", ent->frameIndex);
+	nocash_message();
     if (curFrame != NULL) {
         offX += curFrame->xOff;
         offY += curFrame->yOff;
@@ -132,23 +148,30 @@ const Keyframe* ParseAnimation(Entity* ent) {
     if (ent->animation != NULL && ent->animation->frames != NULL) {
         const Keyframe* frame;
 
+        //sprintf(nocash_buffer, "ENT %u FRAME %i", ent->type, ent->frameIndex);
+        //ocash_message();
+
         if (ent->frameIndex != 0xFF) {
             frame = &ent->animation->frames[ent->frameIndex];
-            if (frame->flipX) {
-                ent->attr1.f.flipX = !ent->attr1.f.flipX;
-            }
 
-            if (frame->flipY) {
-                ent->attr1.f.flipY = !ent->attr1.f.flipY;
-            }
-
-            if (ent->frameDuration < frame->duration) {
-                ent->frameDuration++;
+            // here not lower because we dont want to flip every frame... unless?
+            if (++ent->frameDuration < frame->duration) {
                 return frame;
-            }
-            else {
+            } else {
                 ent->frameDuration = 0;
             }
+
+            //if (frame->flipX) {
+            // bool flipX = frame->flipX ^ ent->parent->attr1.f.flipX;
+            // bool flipY = frame->flipY ^ ent->parent->attr1.f.flipY;
+            // ent->attr1.f.flipX = flipX;
+            // ent->attr1.f.flipY = flipY;
+                //ent->attr1.f.flipX = !ent->attr1.f.flipX;
+            //}
+
+            // if (frame->flipY) {
+            //     ent->attr1.f.flipY = !ent->attr1.f.flipY;
+            // }
 
             if (frame->end) {
                 if (frame->loop) {

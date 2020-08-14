@@ -6,14 +6,14 @@ Entity EntStack[20];
 u32 EntCount = 0;
 
 extern void Player(Entity*);
-extern void Shield(Entity*);
 extern void Sword(Entity*);
+extern void Shield(Entity*);
 extern void Ori(Entity*);
 
 void (*const EntMains[])(Entity*) = {
     Player,
-    Shield,
     Sword,
+    Shield,
     Ori,
 };
 
@@ -45,6 +45,14 @@ Entity* FindEntity(u32 type) {
         }
     }
     return NULL;
+}
+
+void SetAnimation(Entity* ent, const Animation* animation) {
+    if (ent->animation != animation) {
+        ent->animation = animation;
+        ent->frameIndex = 0;
+        ent->frameDuration = 0;
+    }
 }
 
 //---------------------------------------------------------------------------------

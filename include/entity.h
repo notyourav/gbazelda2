@@ -68,6 +68,7 @@ typedef struct Entity {
 
 Entity* CreateEntity(u32 type);
 Entity* FindEntity(u32 type);
+void SetAnimation(Entity* ent, const Animation* animation);
 
 void UpdateEntities();
 void UpdateEntitiesOAM();
