@@ -113,7 +113,6 @@ static const Keyframe Chop[] = {
     { // FRAME 2
         .duration = 2,
         .gfxOffset = 0,
-        //.flipY = true,
         .xOff = 20,
         .yOff = 4,
     },

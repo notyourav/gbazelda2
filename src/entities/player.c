@@ -155,7 +155,7 @@ static void DoRun(Entity*);
 static void DoChop(Entity*);
 
 static void ParseKeyInput(Entity*);
-static void DoPhysics(Entity*);
+static void HandleMovement(Entity*);
 
 static void (*const PlayerActions[])(Entity*) = {
     Init,
@@ -166,7 +166,7 @@ static void (*const PlayerActions[])(Entity*) = {
 
 void Player(Entity* this) {
     PlayerActions[this->action](this);
-    DoPhysics(this);
+    HandleMovement(this);
 }
 
 static void Init(Entity* this) {
@@ -180,7 +180,7 @@ static void ParseKeyInput(Entity* this) {
     if (inputDown.a) {
         this->vel.y += 120;
     }
-    //if (1) {
+
     if (inputDown.b) {
         SetAnimation(this, &Animations[CHOP]);
         this->action = DO_CHOP;
@@ -214,13 +214,12 @@ static void DoRun(Entity* this) {
 
 static void DoChop(Entity* this) {
     if (this->frameIndex == 0xFF) {
-        //this->action = DO_RUN;
         this->frameIndex = 0x00;
         ParseKeyInput(this);
     }
 }
 
-static void DoPhysics(Entity* this) {
+static void HandleMovement(Entity* this) {
         this->pos.y += this->vel.y >> 4;
 
         this->pos.x += this->vel.x >> 4;
@@ -234,5 +233,12 @@ static void DoPhysics(Entity* this) {
 
         if (this->pos.y < 0) {
             this->pos.y = 0;
+        }
+
+        if (camera.x - this->pos.x < -20) {
+            camera.x += 2;
+        }
+        else if (camera.x - this->pos.x > 20) {
+            camera.x -= 2;
         }
 }
