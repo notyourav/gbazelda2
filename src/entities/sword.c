@@ -164,6 +164,8 @@ static const Keyframe Chop[] = {
         .flipX = true,
         .xOff = 4,
         .yOff = 5,
+        .loop = 1,
+        .end = 1,
     },
 };
 
@@ -211,10 +213,6 @@ void Sword(Entity* this) {
         this->pos.x = 0;
     }
 
-    if (this->parent != NULL) {
-        //this->frameIndex = this->parent->frameIndex;
-    }
-
     if (this->action != CHOP) {
         this->attr1.f.flipX = this->parent->attr1.f.flipX;
     }
@@ -222,7 +220,6 @@ void Sword(Entity* this) {
 
 static void Init(Entity* this) {
     LoadSprite(sword_4bpp, NULL, this, SIZE_16x16);
-    this->attr1.raw = 0b01000000;
     this->parent = FindEntity(0);
     SetAnimation(this, &Animations[IDLE]);
     this->priority = 1;
@@ -230,7 +227,6 @@ static void Init(Entity* this) {
 }
 
 static void DoIdle(Entity* this) {
-    //this->frameIndex = 0;
     SetAnimation(this, &Animations[IDLE]);
 }
 

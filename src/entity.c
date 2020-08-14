@@ -9,12 +9,14 @@ extern void Player(Entity*);
 extern void Sword(Entity*);
 extern void Shield(Entity*);
 extern void Ori(Entity*);
+extern void Girl(Entity*);
 
 void (*const EntMains[])(Entity*) = {
     Player,
     Sword,
     Shield,
     Ori,
+    Girl,
 };
 
 

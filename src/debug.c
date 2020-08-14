@@ -29,6 +29,8 @@ void DebugPrintEntityStack() {
         nocash_message();
         sprintf(nocash_buffer, "oamIndex: %u", c->oamIndex);
         nocash_message();
+        sprintf(nocash_buffer, "palette: %u", c->paletteIndex);
+        nocash_message();
         sprintf(nocash_buffer, "attr0: 0b"BINPATTERN, BIN(c->attr0.raw));
         nocash_message();
         sprintf(nocash_buffer, "attr1: 0b"BINPATTERN, BIN(c->attr1.raw));

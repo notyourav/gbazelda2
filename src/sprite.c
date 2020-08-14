@@ -3,13 +3,13 @@
 #include "tonc_nocash.h"
 #include <stdio.h>
 
-OBJATTR OAMBuffer[128];
+EWRAM_DATA OBJATTR OAMBuffer[128];
 static u32 objectCount = 0;
 
 // each tile is a word, 8x8 pixels
 u32 tileCount = 0;
 
-u32 PaletteBuffer[16];
+EWRAM_DATA u8 PaletteBuffer[64];
 static u32 paletteCount = 0;
 
 //---------------------------------------------------------------------------------
@@ -23,6 +23,12 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
 
     switch (shape) {
         case SIZE_16x16:
+            ent->attr1.f.objSize = 1;
+            objNum = 1;
+            break;
+        case SIZE_16x32:
+            ent->attr1.f.objSize = 2;
+            ent->attr0.f.shape = 2;
             objNum = 1;
             break;
         case SIZE_24x32:
@@ -39,6 +45,12 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
                 ent->center.y = 8;
                 tileCount += 4;
                 break;
+            case SIZE_16x32:
+                dmaCopy(gfx, SPR_VRAM(tileCount), 32 * 8);
+                ent->center.x = 8;
+                ent->center.y = 16;
+                tileCount += 8;
+                break;
             case SIZE_24x32:
                 dmaCopy(gfx, SPR_VRAM(tileCount), 32 * 12);
                 ent->center.x = 11;
@@ -49,9 +61,8 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
     }
 
     if (palette != NULL) {
-        dmaCopy(palette, &PaletteBuffer[paletteCount], 32);
-        ent->paletteIndex = paletteCount;
-        paletteCount++;
+        dmaCopy(palette, &PaletteBuffer[paletteCount * 32], 32);
+        ent->paletteIndex = paletteCount++;
     }
 
     ent->oamIndex = objectCount;
@@ -60,96 +71,121 @@ void LoadSprite(const u8* gfx, const u8* palette, Entity* ent, u32 shape)  {
     objectCount += objNum;
 }
 
-void Update16x16(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
+
+//---------------------------------------------------------------------------------
+// Handle sprite flipping, offsetting, and OAM attributes.
+//---------------------------------------------------------------------------------
+void UpdateSprite(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
+    u32 oamWidth = 0;
+    u32 oamHeight = 0;
+    u32 gfxSize = 1;
+
     int offX = 0;
     int offY = 0;
 
-    if (curFrame != NULL) {
+    //---------------------------------------------------------------------------------
+    // oamWidth: width in oam objects
+    // oamHeight: height in oam objects
+    // gfxSize: number of VRAM tiles * size of a (4bpp) VRAM tile
+    //---------------------------------------------------------------------------------
+    switch (ent->shape) {
+        case SIZE_16x16:
+            oamWidth = 1;
+            oamHeight = 1;
+            gfxSize = 4 * 32;
+            break;
+        case SIZE_16x32:
+            oamWidth = 1;
+            oamHeight = 1;
+            gfxSize = 8 * 32;
+            break;
+        case SIZE_24x32:
+            oamWidth = 3;
+            oamHeight = 4;
+            gfxSize = 12 * 32;
+            break;
     }
 
-    if (curFrame != NULL && ent->parent != NULL) {
-        // make note
-        ent->attr1.f.flipX = curFrame->flipX ^ ent->parent->attr1.f.flipX;
-        //bool flipX = curFrame->flipX ^ ent->parent->attr1.f.flipX;
-        //bool flipY = curFrame->flipY ^ ent->parent->attr1.f.flipY;
+    //---------------------------------------------------------------------------------
+    // Handle whether or not the sprite should be flipepd and the offset accordingly
+    // Q: should the entity be flipped this frame? 
+    // A: Only if the keyframe specifies so or the parent is flipped, but not BOTH.
+    //
+    // Additionally, if this entity has a parent and this entity is flipped,
+    // then we also mirror the offset given by the frame.
+    //---------------------------------------------------------------------------------
+    if (curFrame != NULL) { 
+        if (ent->parent != NULL) {
+            ent->attr1.f.flipX = curFrame->flipX ^ ent->parent->attr1.f.flipX;
 
-        if (ent->attr1.f.flipX) {
-            offX -= curFrame->xOff;
+            if (ent->attr1.f.flipX) {
+                offX = -curFrame->xOff;
+            }
+            else {
+                offX = curFrame->xOff;
+            }
+
+            if (ent->attr1.f.flipY) {
+                offY = -curFrame->yOff;
+            }
+            else {
+                offY = curFrame->yOff;
+            }
         }
         else {
-            offX += curFrame->xOff;
+            offX = curFrame->xOff;
+            offY = curFrame->yOff;
         }
-
-        if (ent->attr1.f.flipY) {
-            offY -= curFrame->yOff;
-        }
-        else {
-            offY += curFrame->yOff;
-        }
-    	//sprintf(nocash_buffer, "VRAM INDEX: %u", ent->vramIndex);
-		//nocash_message();
-        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 4)), SPR_VRAM(ent->vramIndex), 32 * 4);
+        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * gfxSize), SPR_VRAM(ent->vramIndex), gfxSize);
     }
 
+    //---------------------------------------------------------------------------------
+    // Apply parent position
+    //---------------------------------------------------------------------------------
     if (ent->parent != NULL) {
         offX += ent->parent->pos.x;
         offY += ent->parent->pos.y;
     }
 
-    base[0].attr0 = (ent->attr0.raw << 8) + (u8)(-ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
-    base[0].attr1 = (ent->attr1.raw << 8) + (u8)( ent->pos.x + offX - ent->center.x - camera.x + (SCREEN_W / 2));
-    base[0].attr2 = ent->vramIndex | ((ent->priority & 3) << 10);
+
+    //---------------------------------------------------------------------------------
+    // Update OAM tiles
+    //---------------------------------------------------------------------------------
+    
+    u32 i = 0;
+    u32 j = 0;
+    u32 count = 0;
+
+        for (i = 0; i < oamHeight; i++) {
+            // TODO: handle vertical flipping for metasprites
+            if ((oamWidth > 1) && (((base[count].attr1 >> 8) & 0x10) != ent->attr1.f.flipX)) {
+                // TODO: make sure this doesnt just work with 3 wide metasprites
+                for (j = oamWidth; j > 0; j--) {
+                    //              attr0 = upper 8 bytes                                when all of these are zero, sprite should be centered on screen
+                    //                      \                   I forget why this is x2          _____/|\________________________
+                    //                       \                           |                      /      |           |             |
+                    base[count].attr0 = (ent->attr0.raw << 8) + (u8)(i * 2 * oamHeight - ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
+                    base[count].attr1 = (ent->attr1.raw << 8) + (u8)(j * 2 * oamHeight + ent->pos.x + offX - ent->center.x * 2 - camera.x + (SCREEN_W / 2));
+                    base[count].attr2 = ((ent->vramIndex + count) | ((ent->priority & 3) << 10) | ((ent->paletteIndex & 7) << 12));
+                    count++;
+                }
+            } else {
+                for (j = 0; j < oamWidth; j++) {
+                    base[count].attr0 = (ent->attr0.raw << 8) + (u8)(i * 2 * oamHeight - ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
+                    base[count].attr1 = (ent->attr1.raw << 8) + (u8)(j * 2 * oamHeight + ent->pos.x + offX - ent->center.x - camera.x + (SCREEN_W / 2));
+                    base[count].attr2 = ((ent->vramIndex + count) | ((ent->priority & 3) << 10) | ((ent->paletteIndex & 7) << 12));
+                    count++;
+                }
+            }
+        }
 }
 
 //---------------------------------------------------------------------------------
-// Updates every tile for a 24x32 sized entity.
+// Handle the keyframe the entity started with this frame.
 //---------------------------------------------------------------------------------
-void Update24x32(OBJATTR* base, Entity* ent, const Keyframe* curFrame) {
-    int i = 0;
-    int j = 0;
-    int c = 0;
-    int offX = 0;
-    int offY = 0;
-
-    sprintf(nocash_buffer, "FRAME INDEX: %u", ent->frameIndex);
-	nocash_message();
-    if (curFrame != NULL) {
-        offX += curFrame->xOff;
-        offY += curFrame->yOff;
-        dmaCopy(ent->animation->gfx + (curFrame->gfxOffset * (32 * 12)), SPR_VRAM(ent->vramIndex), 32 * 12);
-    }
-
-    if (ent->parent != NULL) {
-        offX += ent->parent->pos.x;
-        offY += ent->parent->pos.y;
-    }
-
-    for (i = 0; i < 4; i++) {  
-        if (((base[c].attr1 >> 8) & 0x10) != ent->attr1.f.flipX) {
-            for (j = 3; j > 0; j--) {
-                base[c].attr0 = (ent->attr0.raw << 8) + (u8)(i * 8 - ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
-                base[c].attr1 = (ent->attr1.raw << 8) + (u8)(j * 8 + ent->pos.x + offX - ent->center.x * 2 - camera.x + (SCREEN_W / 2));
-                base[c].attr2 = (ent->vramIndex + c) | ((ent->priority & 3) << 10);
-                c++;
-            }
-        }
-        else {
-            for (j = 0; j < 3; j++) {
-                base[c].attr0 = (ent->attr0.raw << 8) + (u8)(i * 8 - ent->pos.y - offY - ent->center.y + camera.y + (SCREEN_H / 2));
-                base[c].attr1 = (ent->attr1.raw << 8) + (u8)(j * 8 + ent->pos.x + offX - ent->center.x - camera.x + (SCREEN_W / 2));
-                base[c].attr2 = (ent->vramIndex + c) | ((ent->priority & 3) << 10);
-                c++;
-            }
-        }
-    }
-}
-
 const Keyframe* ParseAnimation(Entity* ent) {
     if (ent->animation != NULL && ent->animation->frames != NULL) {
         const Keyframe* frame;
-
-        //sprintf(nocash_buffer, "ENT %u FRAME %i", ent->type, ent->frameIndex);
-        //ocash_message();
 
         if (ent->frameIndex != 0xFF) {
             frame = &ent->animation->frames[ent->frameIndex];
@@ -160,18 +196,6 @@ const Keyframe* ParseAnimation(Entity* ent) {
             } else {
                 ent->frameDuration = 0;
             }
-
-            //if (frame->flipX) {
-            // bool flipX = frame->flipX ^ ent->parent->attr1.f.flipX;
-            // bool flipY = frame->flipY ^ ent->parent->attr1.f.flipY;
-            // ent->attr1.f.flipX = flipX;
-            // ent->attr1.f.flipY = flipY;
-                //ent->attr1.f.flipX = !ent->attr1.f.flipX;
-            //}
-
-            // if (frame->flipY) {
-            //     ent->attr1.f.flipY = !ent->attr1.f.flipY;
-            // }
 
             if (frame->end) {
                 if (frame->loop) {
@@ -199,17 +223,7 @@ void UpdateObjectAttributes(Entity* ent) {
     const Keyframe* curFrame;
 
     curFrame = ParseAnimation(ent);
-
-    switch (ent->shape) {
-        case NONE:
-            break;
-        case SIZE_16x16:
-            Update16x16(base, ent, curFrame);
-            break;
-        case SIZE_24x32:
-            Update24x32(base, ent, curFrame);
-            break;
-    }
+    UpdateSprite(base, ent, curFrame);
 }
 
 void CopyPaletteBuffer() {

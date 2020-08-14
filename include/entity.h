@@ -7,6 +7,7 @@
 enum {
     NONE,
     SIZE_16x16,
+    SIZE_16x32,
     SIZE_24x32
 };
 

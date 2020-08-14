@@ -156,7 +156,6 @@ void Shield(Entity* this) {
 
 static void Init(Entity* this) {
     LoadSprite(shield_4bpp, NULL, this, SIZE_16x16);
-    this->attr1.raw = 0b01000000;
     this->parent = FindEntity(0);
     SetAnimation(this, &Animations[NO_ANIM]);
     this->priority = 1;
