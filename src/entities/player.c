@@ -171,7 +171,7 @@ void Player(Entity* this) {
 
 static void Init(Entity* this) {
     LoadSprite(link_run_4bpp, link_gbapal, this, SIZE_24x32);
-    this->priority = 2;
+    this->priority = 1;
     SetAnimation(this, &Animations[IDLE]);
     this->action = DO_IDLE;
 }

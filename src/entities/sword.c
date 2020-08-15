@@ -222,7 +222,7 @@ static void Init(Entity* this) {
     LoadSprite(sword_4bpp, NULL, this, SIZE_16x16);
     this->parent = FindEntity(0);
     SetAnimation(this, &Animations[IDLE]);
-    this->priority = 1;
+    this->priority = 0;
     this->action = DO_IDLE;
 }
 

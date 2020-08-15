@@ -7,6 +7,7 @@
 #include "amiga_1bpp.h"
 #include "debug.h"
 #include <stdio.h>
+#include "tilemap.h"
 
 u16 keysDownRaw;
 Input inputDown;
@@ -20,7 +21,7 @@ Pos camera;
 //---------------------------------------------------------------------------------
 void VblankInterrupt()
 {
-	frame += 1;
+	frame++;
 	scanKeys();
 	keysDownRaw = keysDown();
 	inputDown = *(Input *)&keysDownRaw;
@@ -42,7 +43,7 @@ int main(void)
 	// Allow Interrupts
 	REG_IME = 1;
 
-	SetMode( MODE_0 | OBJ_ENABLE | OBJ_1D_MAP );
+	SetMode( MODE_1 | BG0_ENABLE | BG0_ON | OBJ_ENABLE | OBJ_1D_MAP );
 	camera.x = 0;
 	camera.y = 0;
 	
@@ -51,8 +52,8 @@ int main(void)
 	CreateEntity(2); // shield
 	CreateEntity(3); // ori
 	CreateEntity(4); // girl
+	LoadTiles();
 
-	
 	while (1)
 	{
 		VBlankIntrWait();

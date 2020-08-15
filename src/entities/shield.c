@@ -158,7 +158,7 @@ static void Init(Entity* this) {
     LoadSprite(shield_4bpp, NULL, this, SIZE_16x16);
     this->parent = FindEntity(0);
     SetAnimation(this, &Animations[NO_ANIM]);
-    this->priority = 1;
+    this->priority = 0;
     this->action = DO_IDLE;
 }
 
