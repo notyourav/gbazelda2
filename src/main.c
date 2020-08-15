@@ -45,13 +45,14 @@ int main(void)
 	SetMode( MODE_0 | OBJ_ENABLE | OBJ_1D_MAP );
 	camera.x = 0;
 	camera.y = 0;
-	//consoleInit(0, 31, 0, amiga_1bpp, 10, 0);
 	
-	CreateEntity(0);
-	CreateEntity(1);
-	CreateEntity(2);
-	CreateEntity(3);
-	CreateEntity(4);
+	CreateEntity(0); // player
+	CreateEntity(1); // sword
+	CreateEntity(2); // shield
+	CreateEntity(3); // ori
+	CreateEntity(4); // girl
+
+	
 	while (1)
 	{
 		VBlankIntrWait();
